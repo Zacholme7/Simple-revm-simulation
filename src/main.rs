@@ -3,13 +3,14 @@ use alloy_node_bindings::Anvil;
 use alloy_provider::Provider;
 use alloy_provider::ProviderBuilder;
 use alloy_signer_wallet::LocalWallet;
+use alloy_primitives::U256;
 use alloy_sol_types::{sol, SolCall};
 use anyhow::Result;
 use foundry_evm::fork::{BlockchainDb, BlockchainDbMeta, SharedBackend};
 use revm::{db::CacheDB, Evm};
+use revm::interpreter::primitives::{AccountInfo, Bytecode, Bytes, keccak256};
 use std::collections::BTreeSet;
 
-use crate::Counter::*;
 
 sol!(
     #[sol(rpc, bytecode = "6080604052348015600e575f80fd5b506101778061001c5f395ff3fe608060405234801561000f575f80fd5b506004361061003f575f3560e01c806306661abd14610043578063a87d942c14610061578063d09de08a1461007f575b5f80fd5b61004b610089565b60405161005891906100c8565b60405180910390f35b61006961008e565b60405161007691906100c8565b60405180910390f35b610087610096565b005b5f5481565b5f8054905090565b60015f808282546100a7919061010e565b92505081905550565b5f819050919050565b6100c2816100b0565b82525050565b5f6020820190506100db5f8301846100b9565b92915050565b7f4e487b71000000000000000000000000000000000000000000000000000000005f52601160045260245ffd5b5f610118826100b0565b9150610123836100b0565b925082820190508082111561013b5761013a6100e1565b5b9291505056fea2646970667358221220dc61928b75c9f79e8b82b86e93a996b4da03268809cca775e9130181f9b398eb64736f6c634300081a0033")]
@@ -30,7 +31,7 @@ sol!(
 async fn main() -> Result<()> {
     // setup provdier to forked anvil
     let anvil = Anvil::new()
-        .fork("https://blastl2-mainnet.blastapi.io/f862eb6f-8672-4ee1-a02a-9def8b777f51")
+        .fork("https://eth.merkle.io")
         .try_spawn()?;
 
     let signer: LocalWallet = anvil.keys()[0].clone().into();
@@ -65,8 +66,35 @@ async fn main() -> Result<()> {
     let db = CacheDB::new(shared_backend);
     let mut evm = Evm::builder().with_db(db).build();
 
+    // modify the env
+    evm.cfg_mut().limit_contract_code_size = Some(0x100000);
+    evm.cfg_mut().disable_block_gas_limit = true;
+    evm.cfg_mut().disable_base_fee = true;
+    evm.block_mut().number = U256::from(block_number + 1);
 
-    let increment_call_encode = incrementCall::new(()).abi_encode();
+    let mut_db = evm.db_mut();
+
+    // 10 ether
+    let ten_eth = U256::from(10).checked_mul(U256::from(10).pow(U256::from(18))).unwrap();
+
+    // set a user account
+    let user = AccountInfo::new(ten_eth, 0, keccak256(Bytes::new()), Bytecode::default());
+
+
+
+    println!("{:?}", evm.db());
+
+
+
+
+
+
+
+
+
+    let increment_call_encode = Counter::incrementCall::new(()).abi_encode();
+
+
 
 
 
