@@ -30,11 +30,13 @@ sol!(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // setup provdier to forked anvil
+    // setup provider to forked anvil
     let anvil = Anvil::new().fork("https://eth.merkle.io").try_spawn()?;
 
+    // signer to deploy the contract
     let signer: LocalWallet = anvil.keys()[0].clone().into();
 
+    // provider communicating with anvil
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .network::<alloy_network::AnyNetwork>()
@@ -46,9 +48,9 @@ async fn main() -> Result<()> {
     let contract = Counter::deploy(&provider).await?;
     println!("Deployed contract at {}", contract.address());
 
-    // setup shared backend
     let block_number = provider.get_block_number().await?;
 
+    // setup shared backend
     let shared_backend = SharedBackend::spawn_backend_thread(
         provider.clone(),
         BlockchainDb::new(
@@ -74,7 +76,7 @@ async fn main() -> Result<()> {
     let mut_db = evm.db_mut();
 
     // setup user account and insert into database
-    let user = address!("18B06aaF27d44B756FCF16Ca20C1f183EB49111f"); // 10 ether
+    let user = address!("18B06aaF27d44B756FCF16Ca20C1f183EB49111f");
     let ten_eth = U256::from(10)
         .checked_mul(U256::from(10).pow(U256::from(18)))
         .unwrap();
@@ -89,7 +91,7 @@ async fn main() -> Result<()> {
     evm.tx_mut().data = increment_call_encode.into();
     evm.transact_commit().unwrap();
 
-    // call getCount
+    // modify transaction and call getCount
     let getcount_call_encode = Counter::getCountCall::new(()).abi_encode();
     evm.tx_mut().data = getcount_call_encode.into();
     let ref_tx = evm.transact().unwrap();
@@ -104,6 +106,6 @@ async fn main() -> Result<()> {
     };
 
     let output = Counter::getCountCall::abi_decode_returns(&value, false)?;
-    println!("Output: {:?}", output);
+    println!("Output after incrementing: {:?}", output);
     Ok(())
 }
