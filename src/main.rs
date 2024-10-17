@@ -42,7 +42,6 @@ fn main() -> Result<()> {
             tx.value = U256::ZERO;
         })
         .build();
-
     // transact and commit this transaction to the database!
     if let Err(e) = evm.transact_commit() {
         panic!("Increment call failed: {:?}", e);

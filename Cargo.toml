@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-alloy = { version = "0.3.6", features = ["full"] }
+alloy = { version = "0.4.2", features = ["json", "sol-types"] }
 anyhow = "1.0.89"
 dotenv = "0.15.0"
-revm = { version = "14.0.2", features = ["alloydb"] }
+revm = "16.0.0"
